@@ -78,3 +78,23 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Server is live on http://localhost:${PORT}`);
 });
+
+// PUT: Admin can update a saree
+app.put('/api/sarees/:id', async (req, res) => {
+    try {
+        const updatedSaree = await Saree.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedSaree) {
+            return res.status(404).json({ error: "Saree not found" });
+        }
+
+        res.json(updatedSaree);
+
+    } catch (err) {
+        res.status(400).json({ error: "Update failed", details: err.message });
+    }
+});

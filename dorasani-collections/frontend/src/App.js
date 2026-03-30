@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from "axios";
 
 // --- INITIAL SAMPLE DATA (Source of Truth) ---
-const initialStock = [
+/*const initialStock = [
   { id: '101', name: 'Handloom Silk Saree', price: 950, stock: 45, image: 'https://images.unsplash.com/photo-1610030469668-935142b96fe4?q=80&w=400', details: 'Pure Handloom' },
   { id: '102', name: 'Zari Border Saree', price: 1050, stock: 12, image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=400', details: 'Zari Border' },
-];
+];*/
 
 const initialOrders = [
   { id: 'S-1032', customer: 'Priya Rao', phone: '9845012345', date: 'Apr 24, 2026', amount: '₹3293', status: 'Pending' },
@@ -17,17 +18,32 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
+  const [sarees, setSarees] = useState([]);
 
   // Fixed credentials (TEMPORARY - Must remove by Day 5)
-  const tempCredentials = { user: 'admin', pass: 'sridorasani123' };
+  const tempCredentials = { user: 'admin', pass: 'admin' };
 
   // --- CONTENT & MODAL STATE ---
   const [activeView, setActiveView] = useState('Stock'); // Stock, Orders, Dashboard
-  const [products, setProducts] = useState(initialStock);
+  //const [products, setProducts] = useState(initialStock);
   const [orders, setOrders] = useState(initialOrders);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ id: '', name: '', price: '', stock: '', details: '', image: '' });
+  const [formData, setFormData] = useState({ name: '', price: '', stock: '', details: '', image: '' });
   const [editingId, setEditingId] = useState(null);
+
+  const fetchSarees = async () => {
+        try {
+          const response = await axios.get("http://localhost:5000/api/sarees");
+          setSarees(response.data);
+        } catch (error) {
+          console.error("Error fetching sarees:", error);
+        }
+      };
+
+      // Load when page loads
+      useEffect(() => {
+        fetchSarees();
+      }, []);
 
   // --- 🔒 LOGIN PAGE UI & LOGIC ---
   const handleLoginSubmit = (e) => {
@@ -60,14 +76,32 @@ function App() {
   }
 
   // --- PRODUCT MANAGEMENT LOGIC (FIXED Edit/Delete) ---
-  const handleProductSave = () => {
-    if (editingId) {
-      setProducts(products.map(p => p.id === editingId ? { ...formData } : p));
-    } else {
-      setProducts([...products, { ...formData, id: formData.id || Date.now().toString() }]);
+  const handleProductSave = async () => {
+    try {
+      if (editingId) {
+        // UPDATE
+        await axios.put(
+          `http://localhost:5000/api/sarees/${editingId}`,
+          formData
+        );
+      } else {
+        // CREATE
+        await axios.post(
+          "http://localhost:5000/api/sarees",
+          formData
+        );
+      }
+
+      fetchSarees(); // reload from DB
+      closeProductModal();
+
+    } catch (error) {
+      console.error("Error saving saree:", error);
     }
-    closeProductModal();
   };
+
+
+
 
   const openProductEdit = (product) => {
     setEditingId(product.id);
@@ -75,9 +109,14 @@ function App() {
     setIsModalOpen(true);
   };
 
-  const handleProductDelete = (id) => {
-    if (window.confirm('Are you sure you want to remove this saree from stock permanently?')) {
-      setProducts(products.filter(product => product.id !== id));
+  const handleProductDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this saree?")) {
+      try {
+        await axios.delete(`http://localhost:5000/api/sarees/${id}`);
+        fetchSarees(); // reload from DB
+      } catch (error) {
+        console.error("Error deleting saree:", error);
+      }
     }
   };
 
@@ -167,7 +206,7 @@ function App() {
                 <thead className="bg-gray-50 text-[10px] uppercase text-gray-500 border-b"><tr><th className="p-5">Image</th><th className="p-5">ID & Name</th><th className="p-5 text-[#4A0E0E]">Price</th><th className="p-5 text-[#4A0E0E]">Stock Status</th><th className="p-5 text-center">Actions</th></tr></thead>
                 {/* Table Body ... */}
                 <tbody className="divide-y divide-gray-100">
-                  {products.map(p => (
+                  {sarees.map(p => (
                     <tr key={p.id} className="hover:bg-[#FDF8F2]/50 transition-colors">
                       <td className="p-5"><img src={p.image} className="w-16 h-20 object-cover shadow-sm border border-[#D4AF37]/20" /></td>
                       <td className="p-5"><p className="font-bold text-[#4A0E0E] text-base">{p.name}</p><p className="text-[10px] text-gray-400 font-mono italic">ID: {p.id}</p></td>
@@ -245,7 +284,7 @@ function App() {
             <h3 className="text-3xl text-[#4A0E0E] italic mb-8 font-bold">{editingId ? 'Edit Product' : 'Register New Saree'}</h3>
             <div className="grid grid-cols-2 gap-6">
               <div className="col-span-2"><label className="text-[10px] uppercase font-bold text-gray-400">Saree Photo URL</label><input type="text" className="w-full border-b-2 p-2 outline-none" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} /></div>
-              <div><label className="text-[10px] uppercase font-bold text-gray-400">Saree ID (e.g., 101)</label><input type="text" className="w-full border-b-2 p-2 outline-none" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} /></div>
+             /* <div><label className="text-[10px] uppercase font-bold text-gray-400">Saree ID (e.g., 101)</label><input type="text" className="w-full border-b-2 p-2 outline-none" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} /></div>*/
               <div><label className="text-[10px] uppercase font-bold text-gray-400">Price (₹)</label><input type="number" className="w-full border-b-2 p-2 outline-none" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} /></div>
               <div className="col-span-2"><label className="text-[10px] uppercase font-bold text-gray-400">Saree Name</label><input type="text" className="w-full border-b-2 p-2 outline-none" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
               <div className="col-span-2"><label className="text-[10px] uppercase font-bold text-gray-400">Stock Pieces</label><input type="number" className="w-full border-b-2 p-2 outline-none" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} /></div>
