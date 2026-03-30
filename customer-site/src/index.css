@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  /* These are your custom Sri Dorasani luxury colors */
+  --color-sri-maroon: #4A0E0E;
+  --color-sri-gold: #D4AF37;
+  --color-sri-cream: #F9F4F0;
+}
+
+/* Optional: You can add custom fonts or global styles below this line */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

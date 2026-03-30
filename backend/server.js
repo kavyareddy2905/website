@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose'); // Added Mongoose
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 const app = express();
@@ -10,7 +10,6 @@ app.use(cors());
 app.use(express.json());
 
 // --- DATABASE CONNECTION ---
-// We use process.env.MONGO_URI to pull the link from your .env file
 const mongoURI = process.env.MONGO_URI;
 
 mongoose.connect(mongoURI)
@@ -20,16 +19,58 @@ mongoose.connect(mongoURI)
         console.log("-----------------------------------------");
     })
     .catch((err) => {
-        console.log("-----------------------------------------");
-        console.log("❌ DATABASE CONNECTION ERROR:");
-        console.log(err.message);
-        console.log("-----------------------------------------");
+        console.log("❌ DATABASE CONNECTION ERROR:", err.message);
     });
 
-// --- ROUTES ---
-// Default route to check if server is up
+// --- 1. SAREE MODEL (The Blueprint) ---
+const SareeSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    price: { type: Number, required: true },
+    category: String,       // e.g., "Silk", "Cotton"
+    stockStatus: String,    // e.g., "In Stock", "Out of Stock"
+    imageUrl: String,       // Link to the saree photo
+    description: String,
+    dateAdded: { type: Date, default: Date.now }
+});
+
+const Saree = mongoose.model('Saree', SareeSchema);
+
+// --- 2. ROUTES (The Bridge) ---
+
+// POST: Admin Portal calls this to ADD a new saree
+app.post('/api/sarees', async (req, res) => {
+    try {
+        const newSaree = new Saree(req.body);
+        const savedSaree = await newSaree.save();
+        res.status(201).json(savedSaree);
+    } catch (err) {
+        res.status(400).json({ error: "Failed to add saree", details: err.message });
+    }
+});
+
+// GET: Customer Website calls this to VIEW all sarees
+app.get('/api/sarees', async (req, res) => {
+    try {
+        const allSarees = await Saree.find().sort({ dateAdded: -1 }); // Newest first
+        res.json(allSarees);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch sarees" });
+    }
+});
+
+// DELETE: Admin can remove a product
+app.delete('/api/sarees/:id', async (req, res) => {
+    try {
+        await Saree.findByIdAndDelete(req.params.id);
+        res.json({ message: "Saree deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ error: "Delete failed" });
+    }
+});
+
+// Default Root Route
 app.get('/', (req, res) => {
-    res.send("Sri Dorasani Backend is successfully running and connected!");
+    res.send("Sri Dorasani API is Live!");
 });
 
 // Port Setup

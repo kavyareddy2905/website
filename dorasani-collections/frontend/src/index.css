@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-maroon: #4a0e0e;
+  --color-brand-gold: #d4af37;
+  --color-brand-cream: #fdf8f2;
+}
+
+@layer base {
+  body {
+    @apply m-0 p-0 overflow-x-hidden bg-brand-cream;
+    font-family: serif;
+  }
+}
